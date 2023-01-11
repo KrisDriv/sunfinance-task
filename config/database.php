@@ -8,9 +8,9 @@ return [
     ],
     'mysql' => [
         'driver' => 'pdo_mysql',
-        'dbname' => 'test',
-        'user' => 'test',
-        'password' => 'test',
+        'dbname' => 'sunfinance',
+        'user' => 'root',
+        'password' => '',
         'host' => '127.0.0.1',
     ],
     'postgres' => [

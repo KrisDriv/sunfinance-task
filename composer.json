@@ -3,7 +3,7 @@
   "description": "Homework task for Sunfinance Group",
   "autoload": {
     "psr-4": {
-      "KrisDriv\\TaskSunfinance\\": "src/"
+      "App\\": "src/"
     }
   },
   "authors": [
@@ -14,9 +14,9 @@
   ],
   "require": {
     "php": ">= 8.1",
-    "erickfirmo/router": "^1.1",
     "vlucas/phpdotenv": "^5.5",
     "compositephp/db": "^0.2.0",
-    "haydenpierce/class-finder": "^0.4.4"
+    "haydenpierce/class-finder": "^0.4.4",
+    "bramus/router": "~1.6"
   }
 }

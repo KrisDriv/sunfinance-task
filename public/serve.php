@@ -5,7 +5,6 @@
  *
  * php -S localhost:8000 public/serve.php
  */
-
 chdir(__DIR__);
 $filePath = realpath(ltrim($_SERVER["REQUEST_URI"], '/'));
 if ($filePath && is_dir($filePath)) {
@@ -19,9 +18,9 @@ if ($filePath && is_dir($filePath)) {
 
 if ($filePath && is_file($filePath)) {
 
-    if (strpos($filePath, __DIR__ . DIRECTORY_SEPARATOR) === 0 &&
+    if (str_starts_with($filePath, __DIR__ . DIRECTORY_SEPARATOR) &&
         $filePath != __DIR__ . DIRECTORY_SEPARATOR &&
-        substr(basename($filePath), 0, 1) != '.'
+        !str_starts_with(basename($filePath), '.')
     ) {
         if (strtolower(substr($filePath, -4)) == '.php') {
             // php file; serve through interpreter
@@ -37,5 +36,5 @@ if ($filePath && is_file($filePath)) {
     }
 
 } else {
-    include __DIR__ . DIRECTORY_SEPARATOR . 'index.php';
+    include 'index.php';
 }

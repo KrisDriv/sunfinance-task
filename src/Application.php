@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace KrisDriv\TaskSunfinance;
+namespace App;
 
 use Composite\DB\ConnectionManager;
 

@@ -25,19 +25,25 @@ $consoleOutput = new SymfonyStyle($consoleInput, new ConsoleOutput());
 ClassFinder::setAppRoot(ROOT);
 try {
     $classesInCommandsNamespace = ClassFinder::getClassesInNamespace(
-        'App\Commands',
+        'App\\Commands',
         ClassFinder::RECURSIVE_MODE
     );
 
     $commandClasses = array_filter(
         $classesInCommandsNamespace,
-        fn(string $classInCommandNamespace): bool => $classInCommandNamespace instanceof Command
+        fn(string $classInCommandNamespace): bool => is_subclass_of($classInCommandNamespace, Command::class)
     );
 
-    $commands = [...$commandClasses, ...$commands];
+    $commandObjects = array_map(
+        fn(string $commandClass): Command => new $commandClass,
+        $commandClasses,
+    );
+
+    $commands = [...$commandObjects, ...$commands];
 } catch (Exception $e) {
     $application->renderThrowable($e, $consoleOutput);
 }
+
 
 $application->addCommands($commands);
 $application->setCatchExceptions(true);
