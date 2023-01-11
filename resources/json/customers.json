@@ -1,0 +1,32 @@
+[
+    {
+        "id": "c539792e-7773-4a39-9cf6-f273b2581438",
+        "firstname": "Pupa",
+        "lastname": "Lupa",
+        "ssn": "0987654321",
+        "email": "pupa.lupa@example.com"
+    },
+    {
+        "id": "d275ce5e-91c8-49fe-9407-1700b59efe80",
+        "firstname": "John",
+        "lastname": "Doe",
+        "ssn": "1234509876",
+        "phone": "+44123456789"
+    },
+    {
+        "id": "a5c50ea9-9a24-4c8b-b4ae-c47ee007081e",
+        "firstname": "Biba",
+        "lastname": "Boba",
+        "ssn": "1234567890",
+        "phone": "+44123456780",
+        "email": "biba@example.com"
+    },
+    {
+        "id": "c5c05eeb-ff02-4de6-b92e-a1b7f02320df",
+        "firstname": "Lorem",
+        "lastname": "Ipsum",
+        "ssn": "6789054321",
+        "phone": "+481230943320",
+        "email": "lorem@ipsum"
+    }
+]

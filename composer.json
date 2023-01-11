@@ -1,0 +1,16 @@
+{
+    "name": "kris-driv/task-sunfinance",
+    "description": "Homework task for Sunfinance Group",
+    "autoload": {
+        "psr-4": {
+            "KrisDriv\\TaskSunfinance\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "KrisDriv",
+            "email": "k.drivnieks@gmail.com"
+        }
+    ],
+    "require": {}
+}
