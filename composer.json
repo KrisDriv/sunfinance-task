@@ -17,6 +17,8 @@
     "vlucas/phpdotenv": "^5.5",
     "compositephp/db": "^0.2.0",
     "haydenpierce/class-finder": "^0.4.4",
-    "bramus/router": "~1.6"
+    "bramus/router": "~1.6",
+    "php-di/php-di": "6.4.0",
+    "illuminate/http": "^9.47"
   }
 }

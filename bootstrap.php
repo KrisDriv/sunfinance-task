@@ -1,8 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Bramus\Router\Router;
-use Composite\DB\ConnectionManager;
+use App\Application;
 use Dotenv\Dotenv;
 
 const ROOT = __DIR__ . DIRECTORY_SEPARATOR;
@@ -46,15 +45,13 @@ define('IS_STAGING', in_array(ENVIRONMENT, ['stage', 'staging']));
  */
 $dotenv = Dotenv::createUnsafeImmutable(ROOT, ".env." . ENVIRONMENT);
 
-/**
- * Initiate ORM
- */
-$databaseConnection = ConnectionManager::getConnection(env('DATABASE_CONNECTION'));
+$app = new Application();
 
 /**
  * Register routes
  */
-$router = new Router();
+$router = $app->getRouter();
+
 $router->setNamespace('App\\Controllers');
 
 require ROOT . 'routes/web.php';

@@ -1,14 +1,18 @@
 <?php
 declare(strict_types=1);
 
-chdir(dirname(__DIR__));
+use App\Application;
+use Symfony\Component\HttpFoundation\Request;
 
-use Bramus\Router\Router;
+chdir(dirname(__DIR__));
 
 /**
  * Bootstrap the Application
  */
-require 'bootstrap.php';
+require_once 'bootstrap.php';
 
-/** @var Router $router */
-$response = $router->run();
+/** @var Application $app */
+
+$app->present(
+    $app->handle($app->getContainer()->make(Request::class))
+);
