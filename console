@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+require 'bootstrap.php';
+
+use Composite\DB\Commands\GenerateEntityCommand;
+use Composite\DB\Commands\GenerateTableCommand;
+use HaydenPierce\ClassFinder\ClassFinder;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Style\SymfonyStyle;
+
+$commands = [
+    new GenerateEntityCommand(),
+    new GenerateTableCommand(),
+];
+
+$application = new Application();
+$consoleInput = new ArgvInput();
+$consoleOutput = new SymfonyStyle($consoleInput, new ConsoleOutput());
+
+
+ClassFinder::setAppRoot(ROOT);
+try {
+    $classesInCommandsNamespace = ClassFinder::getClassesInNamespace(
+        'App\Commands',
+        ClassFinder::RECURSIVE_MODE
+    );
+
+    $commandClasses = array_filter(
+        $classesInCommandsNamespace,
+        fn(string $classInCommandNamespace): bool => $classInCommandNamespace instanceof Command
+    );
+
+    $commands = [...$commandClasses, ...$commands];
+} catch (Exception $e) {
+    $application->renderThrowable($e, $consoleOutput);
+}
+
+$application->addCommands($commands);
+$application->setCatchExceptions(true);
+
+try {
+    $application->run($consoleInput, $consoleOutput);
+} catch (Throwable $throwable) {
+    $application->renderThrowable($throwable, $consoleOutput);
+
+    echo $throwable->getTraceAsString();
+}
