@@ -52,6 +52,4 @@ try {
     $application->run($consoleInput, $consoleOutput);
 } catch (Throwable $throwable) {
     $application->renderThrowable($throwable, $consoleOutput);
-
-    echo $throwable->getTraceAsString();
 }

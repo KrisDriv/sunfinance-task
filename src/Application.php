@@ -59,17 +59,16 @@ class Application implements RequestHandler, ResponsePresenter
         return $builder->build();
     }
 
-    /**
-     * @throws NotFoundException
-     * @throws ReflectionException
-     * @throws DependencyException
-     */
     public function handle(Request $request): Response
     {
         $match = $this->router->resolve($request);
 
+        if (null === $match) {
+            return new Response('Page not found', Response::HTTP_NOT_FOUND);
+        }
+
         $route = $match['route'];
-        $parameters = $match['parameters'];
+        $routeParameters = $match['parameters'];
         $handler = $route['fn'];
 
         // Handle anonymous functions
@@ -82,27 +81,53 @@ class Application implements RequestHandler, ResponsePresenter
             list($controllerShortName, $method) = explode('@', $handler);
 
             $fullyQualifiedControllerClass = $this->router->getNamespace() . '\\' . $controllerShortName;
+            try {
+                $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
 
-            $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
+                $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
+                $method = $reflectionClass->getMethod($method);
+                $parameters = $method->getParameters();
 
-            $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
-            $method = $reflectionClass->getMethod($method);
-            $parameters = $method->getParameters();
+                $scalarParameterIndex = 0;
+                foreach ($parameters as $methodParameterIndex => $parameter) {
+                    $type = $parameter->getType()->getName();
+                    $parameterName = $parameter->getName();
 
-            foreach ($parameters as $i => $parameter) {
-                try {
-                    // If parameter is built-in and has default value, we skip
+
+                    // If parameter is built-in, meaning we have encountered scalar value
+                    // controller might be trying to achieve one of two things: pull parameter from container
+                    // or value from URL
                     if ($parameter->getType()->isBuiltin()) {
-                        $parameters[$i] = $parameter->getDefaultValue();
-                    } else {
-                        // Otherwise, we request the value from container
-                        $fromContainer = $this->getContainer()->get($parameter->getClass()->name);
+                        // Scalar values (TODO: Might be pulled from container, if no default provided)
+                        // or if default provided, ignore container exception ...
+                        $scalarValue = $routeParameters[$scalarParameterIndex];
 
-                        $parameters[$i] = $fromContainer;
+                        // Prioritise URL parameter
+                        if (!is_null($scalarValue)) {
+                            settype($scalarValue, $type);
+
+                            $parameters[$methodParameterIndex] = $routeParameters[$scalarParameterIndex]
+                                ? $scalarValue
+                                : $parameter->getDefaultValue();
+                        } else {
+                            $parameters[$methodParameterIndex] = $this->getContainer()->get($parameterName);
+                        }
+                    } else {
+                        // Otherwise, we request the Object from container
+                        $fromContainer = $this->getContainer()->get($type);
+
+                        $parameters[$methodParameterIndex] = $fromContainer;
                     }
-                } catch (ReflectionException $e) {
                 }
+            } catch (ReflectionException) {
+                // TODO: Log
+            } catch (DependencyException) {
+                // TODO: Log
+            } catch (NotFoundException) {
+                // TODO: Log
             }
+
+            // TODO: Missing error handler
 
             return $this->normalizeHandlerResponse(call_user_func_array([$controller, $method->name], $parameters));
         }
@@ -112,7 +137,7 @@ class Application implements RequestHandler, ResponsePresenter
             ->setStatusCode(Response::HTTP_NOT_FOUND);
     }
 
-    public function present(Response $response): string
+    public function present(Response $response): void
     {
         $response->send();
     }
@@ -129,7 +154,7 @@ class Application implements RequestHandler, ResponsePresenter
         }
 
         $response = new Response();
-        $response->setContent(is_array($raw) ? json_encode($raw, JSON_PRETTY_PRINT) : $raw);
+        $response->setContent(is_array($raw) ? json_encode($raw, JSON_PRETTY_PRINT) : (string)$raw);
 
         return $response;
     }

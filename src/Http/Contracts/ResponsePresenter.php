@@ -8,6 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 interface ResponsePresenter
 {
 
-    public function present(Response $response): string;
+    public function present(Response $response): void;
 
 }

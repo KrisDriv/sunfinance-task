@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Bramus\Router\Router;
-
 /** @var Router $router */
+
+use App\Router\Router;
 
 $router->post('/payment', 'PaymentController::store');

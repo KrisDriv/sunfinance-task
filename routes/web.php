@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use Bramus\Router\Router;
+/** @var RouterInterface $router */
 
-/** @var Router $router */
+use App\Router\Contracts\RouterInterface;
 
 $router->get('/test', 'TestController@index');
+$router->get('/test/(\d+)', 'TestController@show');

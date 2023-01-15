@@ -5,13 +5,20 @@ use App\Application;
 use Dotenv\Dotenv;
 
 const ROOT = __DIR__ . DIRECTORY_SEPARATOR;
-const APP = ROOT . 'src' . DIRECTORY_SEPARATOR;
+
+define('IS_CONSOLE', php_sapi_name() == 'cli');
 
 /**
  * Composer autoload
  */
 if (file_exists(ROOT . 'vendor/autoload.php')) {
     require ROOT . 'vendor/autoload.php';
+} else {
+    if (IS_CONSOLE) {
+        die("Could not find composer autoload file. Make sure to execute 'composer install'");
+    } else {
+        header('status: 501');
+    }
 }
 
 /**
@@ -21,15 +28,10 @@ foreach (glob(ROOT . 'helpers/*.php') as $helperFile) {
     require $helperFile;
 }
 
+/**
+ * Read environment files
+ */
 $dotenv = Dotenv::createUnsafeImmutable(ROOT);
-
-//$dotenv->required('ENVIRONMENT')->allowedValues([
-//    'dev', 'development',
-//    'test', 'testing',
-//    'prod', 'production',
-//    'stage', 'staging'
-//]);
-
 $dotenv->load();
 
 define('ENVIRONMENT', strtolower(env('ENVIRONMENT')));
@@ -44,6 +46,7 @@ define('IS_STAGING', in_array(ENVIRONMENT, ['stage', 'staging']));
  * Will overwrite previously set values in .env
  */
 $dotenv = Dotenv::createUnsafeImmutable(ROOT, ".env." . ENVIRONMENT);
+$dotenv->safeLoad();
 
 $app = new Application();
 
@@ -59,3 +62,11 @@ require ROOT . 'routes/web.php';
 $router->mount('/api', function () use ($router) {
     require ROOT . 'routes/api.php';
 });
+
+/**
+ * Clean up the global namespace.
+ */
+unset($dotenv);
+unset($router);
+
+return $app;

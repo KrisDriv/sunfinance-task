@@ -5,7 +5,6 @@ use App\Router\Router;
 use Composite\DB\ConnectionManager;
 use Doctrine\DBAL\Connection;
 use HaydenPierce\ClassFinder\ClassFinder;
-use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use function DI\create;
 
@@ -20,8 +19,9 @@ foreach ($discover as $namespace) {
     try {
         $classes = ClassFinder::getClassesInNamespace($namespace);
 
+        // Register classes in the container
         foreach ($classes as $class) {
-            $discover[$class] = create($class);
+            $definitions[$class] = create($class);
         }
     } catch (Exception $e) {
         // TODO: Log
@@ -30,12 +30,11 @@ foreach ($discover as $namespace) {
 }
 
 return array_merge($definitions, [
-
-    Request::class => function() {
+    Request::class => function () {
         return \Illuminate\Http\Request::capture();
     },
     RouterInterface::class => create(Router::class),
     Connection::class => function () {
         return ConnectionManager::getConnection(env('DATABASE_CONNECTION'));
-    }
+    },
 ]);
