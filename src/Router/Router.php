@@ -136,42 +136,6 @@ class Router implements RouterInterface
         }, $matches, array_keys($matches));
     }
 
-
-    private function invoke($handler, $params = []): void
-    {
-        $params = array();
-        if (is_callable($handler)) {
-            call_user_func_array($handler, $params);
-        } // If not, check the existence of special parameters
-        elseif (stripos($handler, '@') !== false) {
-            // Explode segments of given route
-            list($controller, $method) = explode('@', $handler);
-
-            // Adjust controller class if namespace has been set
-            if ($this->getNamespace() !== '') {
-                $controller = $this->getNamespace() . '\\' . $controller;
-            }
-
-            try {
-                $reflectedMethod = new \ReflectionMethod($controller, $method);
-                // Make sure it's callable
-                if ($reflectedMethod->isPublic() && (!$reflectedMethod->isAbstract())) {
-                    if ($reflectedMethod->isStatic()) {
-                        forward_static_call_array(array($controller, $method), $params);
-                    } else {
-                        // Make sure we have an instance, because a non-static method must not be called statically
-                        if (\is_string($controller)) {
-                            $controller = new $controller();
-                        }
-                        call_user_func_array(array($controller, $method), $params);
-                    }
-                }
-            } catch (\ReflectionException $reflectionException) {
-                // The controller class is not available or the class does not have the method $method
-            }
-        }
-    }
-
     public function resolve(Request $request): ?array
     {
         // Define which method we need to handle

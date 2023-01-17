@@ -1,7 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-require 'bootstrap.php';
+require 'bootstrap/autoload.php';
+
+$app = require_once 'bootstrap/app.php';
 
 use Composite\DB\Commands\GenerateEntityCommand;
 use Composite\DB\Commands\GenerateTableCommand;

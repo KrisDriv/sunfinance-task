@@ -22,11 +22,11 @@ class ServeCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $code = 0;
-
         $address = $input->getArgument('address');
         $port = $input->getArgument('port');
 
+        // TODO: Does this open up a vulnerability or since this is never suppose to be available
+        //  to the end user it's not a concern?
         exec("php -S $address:$port public/serve.php", result_code: $code);
 
         return $code;

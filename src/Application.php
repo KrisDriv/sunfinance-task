@@ -12,10 +12,12 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Doctrine\DBAL\Connection;
 use Exception;
+use HaydenPierce\ClassFinder\ClassFinder;
 use ReflectionClass;
 use ReflectionException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use function DI\create;
 
 class Application implements RequestHandler, ResponsePresenter
 {
@@ -23,6 +25,16 @@ class Application implements RequestHandler, ResponsePresenter
     private Container $container;
     private RouterInterface $router;
     private Connection $connection;
+
+    /**
+     * Namespaces in which classes will be automatically registered inside the container
+     *
+     * @var array
+     */
+    private array $discoverNamespaces = [
+        'App\\Controllers',
+        'App\\Services'
+    ];
 
     /**
      * @throws Exception
@@ -33,6 +45,11 @@ class Application implements RequestHandler, ResponsePresenter
 
         $this->router = $this->container->get(RouterInterface::class);
         $this->connection = $this->container->get(Connection::class);
+    }
+
+    public function getConnection(): Connection
+    {
+        return $this->connection;
     }
 
     public function getContainer(): Container
@@ -54,15 +71,33 @@ class Application implements RequestHandler, ResponsePresenter
 
         $builder->writeProxiesToFile(IS_PRODUCTION, ROOT . 'tmp');
 
+        // Default request and response flow
+        $builder->addDefinitions([
+            RequestHandler::class => fn(): RequestHandler => $this,
+            ResponsePresenter::class => fn(): ResponsePresenter => $this
+        ]);
+
+        $builder->addDefinitions(
+            $this->getContainerDefinitionsFromNamespaces(
+                $this->discoverNamespaces
+            )
+        );
+
         $builder->addDefinitions(ROOT . 'config/container.php');
 
         return $builder->build();
     }
 
+    /**
+     * @throws ReflectionException
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function handle(Request $request): Response
     {
         $match = $this->router->resolve($request);
 
+        // TODO:
         if (null === $match) {
             return new Response('Page not found', Response::HTTP_NOT_FOUND);
         }
@@ -81,55 +116,46 @@ class Application implements RequestHandler, ResponsePresenter
             list($controllerShortName, $method) = explode('@', $handler);
 
             $fullyQualifiedControllerClass = $this->router->getNamespace() . '\\' . $controllerShortName;
-            try {
-                $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
+            $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
 
-                $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
-                $method = $reflectionClass->getMethod($method);
-                $parameters = $method->getParameters();
+            $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
+            $method = $reflectionClass->getMethod($method);
+            $controllerMethodParameters = $method->getParameters();
 
-                $scalarParameterIndex = 0;
-                foreach ($parameters as $methodParameterIndex => $parameter) {
-                    $type = $parameter->getType()->getName();
-                    $parameterName = $parameter->getName();
+            $scalarParameterIndex = 0;
+            foreach ($controllerMethodParameters as $methodParameterIndex => $parameter) {
+                $type = $parameter->getType()->getName();
+                $parameterName = $parameter->getName();
 
+                // If parameter is built-in, meaning we have encountered scalar value
+                // controller might be trying to achieve one of two things: pull parameter from container
+                // or value from URL
+                if ($parameter->getType()->isBuiltin()) {
+                    // Scalar values (TODO: Might be pulled from container, if no default provided)
+                    // or if default provided, ignore container exception ...
+                    $scalarValue = $routeParameters[$scalarParameterIndex];
 
-                    // If parameter is built-in, meaning we have encountered scalar value
-                    // controller might be trying to achieve one of two things: pull parameter from container
-                    // or value from URL
-                    if ($parameter->getType()->isBuiltin()) {
-                        // Scalar values (TODO: Might be pulled from container, if no default provided)
-                        // or if default provided, ignore container exception ...
-                        $scalarValue = $routeParameters[$scalarParameterIndex];
+                    // Prioritise URL parameter
+                    if (!is_null($scalarValue)) {
+                        settype($scalarValue, $type);
 
-                        // Prioritise URL parameter
-                        if (!is_null($scalarValue)) {
-                            settype($scalarValue, $type);
-
-                            $parameters[$methodParameterIndex] = $routeParameters[$scalarParameterIndex]
-                                ? $scalarValue
-                                : $parameter->getDefaultValue();
-                        } else {
-                            $parameters[$methodParameterIndex] = $this->getContainer()->get($parameterName);
-                        }
+                        $controllerMethodParameters[$methodParameterIndex] = $routeParameters[$scalarParameterIndex]
+                            ? $scalarValue
+                            : $parameter->getDefaultValue();
                     } else {
-                        // Otherwise, we request the Object from container
-                        $fromContainer = $this->getContainer()->get($type);
-
-                        $parameters[$methodParameterIndex] = $fromContainer;
+                        $controllerMethodParameters[$methodParameterIndex] = $this->getContainer()->get($parameterName);
                     }
+                } else {
+                    // Otherwise, we request the Object from container
+                    $fromContainer = $this->getContainer()->get($type);
+
+                    $controllerMethodParameters[$methodParameterIndex] = $fromContainer;
                 }
-            } catch (ReflectionException) {
-                // TODO: Log
-            } catch (DependencyException) {
-                // TODO: Log
-            } catch (NotFoundException) {
-                // TODO: Log
             }
 
             // TODO: Missing error handler
 
-            return $this->normalizeHandlerResponse(call_user_func_array([$controller, $method->name], $parameters));
+            return $this->normalizeHandlerResponse(call_user_func_array([$controller, $method->name], $controllerMethodParameters));
         }
 
         return (new Response())
@@ -142,11 +168,6 @@ class Application implements RequestHandler, ResponsePresenter
         $response->send();
     }
 
-    public function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
     private function normalizeHandlerResponse(mixed $raw): Response
     {
         if ($raw instanceof Response) {
@@ -157,6 +178,26 @@ class Application implements RequestHandler, ResponsePresenter
         $response->setContent(is_array($raw) ? json_encode($raw, JSON_PRETTY_PRINT) : (string)$raw);
 
         return $response;
+    }
+
+    private function getContainerDefinitionsFromNamespaces(array $namespaces): array
+    {
+        $definitions = [];
+        foreach ($namespaces as $namespace) {
+            try {
+                $classes = ClassFinder::getClassesInNamespace($namespace);
+
+                // Register classes in the container
+                foreach ($classes as $class) {
+                    $definitions[$class] = create($class);
+                }
+            } catch (Exception $e) {
+                // TODO: Log
+                continue;
+            }
+        }
+
+        return $definitions;
     }
 
 }

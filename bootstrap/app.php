@@ -4,22 +4,9 @@ declare(strict_types=1);
 use App\Application;
 use Dotenv\Dotenv;
 
-const ROOT = __DIR__ . DIRECTORY_SEPARATOR;
 
+define('ROOT', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 define('IS_CONSOLE', php_sapi_name() == 'cli');
-
-/**
- * Composer autoload
- */
-if (file_exists(ROOT . 'vendor/autoload.php')) {
-    require ROOT . 'vendor/autoload.php';
-} else {
-    if (IS_CONSOLE) {
-        die("Could not find composer autoload file. Make sure to execute 'composer install'");
-    } else {
-        header('status: 501');
-    }
-}
 
 /**
  * Load helper functions

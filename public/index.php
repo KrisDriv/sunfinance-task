@@ -1,18 +1,19 @@
 <?php
 declare(strict_types=1);
 
-use App\Application;
+use App\Http\Contracts\RequestHandler;
+use App\Http\Contracts\ResponsePresenter;
 use Symfony\Component\HttpFoundation\Request;
 
+// Change directory to ROOT
 chdir(dirname(__DIR__));
 
-/**
- * Bootstrap the Application
- */
-require_once 'bootstrap.php';
+require 'bootstrap/autoload.php';
 
-/** @var Application $app */
+$app = require_once 'bootstrap/app.php';
 
-$app->present(
-    $app->handle($app->getContainer()->make(Request::class))
+$app->getContainer()->get(ResponsePresenter::class)->present(
+    $app->getContainer()->get(RequestHandler::class)->handle(
+        $app->getContainer()->make(Request::class)
+    )
 );
