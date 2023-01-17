@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-/** @var RouterInterface $router */
-
 use App\Router\Contracts\RouterInterface;
 
-$router->get('/test', 'TestController@index');
-$router->get('/test/(\d+)', 'TestController@show');
+return function (RouterInterface $router): void {
+
+    $router->get('/test', fn() => 'Hello, world!');
+
+};

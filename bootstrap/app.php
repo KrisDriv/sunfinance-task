@@ -44,10 +44,10 @@ $router = $app->getRouter();
 
 $router->setNamespace('App\\Controllers');
 
-require ROOT . 'routes/web.php';
+(require ROOT . 'routes/web.php')($router);
 
 $router->mount('/api', function () use ($router) {
-    require ROOT . 'routes/api.php';
+    (require ROOT . 'routes/api.php')($router);
 });
 
 /**

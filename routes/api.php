@@ -1,8 +1,10 @@
 <?php
 declare(strict_types=1);
 
-/** @var Router $router */
+use App\Router\Contracts\RouterInterface;
 
-use App\Router\Router;
+return function (RouterInterface $router): void {
 
-$router->post('/payment', 'PaymentController::store');
+
+
+};

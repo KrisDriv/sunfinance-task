@@ -15,6 +15,8 @@ use Exception;
 use HaydenPierce\ClassFinder\ClassFinder;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use function DI\create;
@@ -103,12 +105,19 @@ class Application implements RequestHandler, ResponsePresenter
         }
 
         $route = $match['route'];
-        $routeParameters = $match['parameters'];
+        $queryParameters = $match['parameters'];
         $handler = $route['fn'];
 
         // Handle anonymous functions
         if (is_callable($handler)) {
-            return $this->normalizeHandlerResponse(call_user_func($handler, $request));
+            $function = new ReflectionFunction($handler);
+
+            return $this->normalizeHandlerResponse(
+                call_user_func_array(
+                    $handler,
+                    $this->resolveHandlerParameters($function, $queryParameters)
+                )
+            );
         }
 
         // Handle controller calls
@@ -119,48 +128,64 @@ class Application implements RequestHandler, ResponsePresenter
             $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
 
             $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
-            $method = $reflectionClass->getMethod($method);
-            $controllerMethodParameters = $method->getParameters();
 
-            $scalarParameterIndex = 0;
-            foreach ($controllerMethodParameters as $methodParameterIndex => $parameter) {
-                $type = $parameter->getType()->getName();
-                $parameterName = $parameter->getName();
+            // Allow invocable controllers
+            $function = $reflectionClass->getMethod($method ?? '__invoke');
 
-                // If parameter is built-in, meaning we have encountered scalar value
-                // controller might be trying to achieve one of two things: pull parameter from container
-                // or value from URL
-                if ($parameter->getType()->isBuiltin()) {
-                    // Scalar values (TODO: Might be pulled from container, if no default provided)
-                    // or if default provided, ignore container exception ...
-                    $scalarValue = $routeParameters[$scalarParameterIndex];
-
-                    // Prioritise URL parameter
-                    if (!is_null($scalarValue)) {
-                        settype($scalarValue, $type);
-
-                        $controllerMethodParameters[$methodParameterIndex] = $routeParameters[$scalarParameterIndex]
-                            ? $scalarValue
-                            : $parameter->getDefaultValue();
-                    } else {
-                        $controllerMethodParameters[$methodParameterIndex] = $this->getContainer()->get($parameterName);
-                    }
-                } else {
-                    // Otherwise, we request the Object from container
-                    $fromContainer = $this->getContainer()->get($type);
-
-                    $controllerMethodParameters[$methodParameterIndex] = $fromContainer;
-                }
-            }
-
-            // TODO: Missing error handler
-
-            return $this->normalizeHandlerResponse(call_user_func_array([$controller, $method->name], $controllerMethodParameters));
+            return $this->normalizeHandlerResponse(
+                call_user_func_array(
+                    [$controller, $function->name],
+                    $this->resolveHandlerParameters($function, $queryParameters)
+                )
+            );
         }
 
         return (new Response())
             ->setContent('Page not found')
             ->setStatusCode(Response::HTTP_NOT_FOUND);
+    }
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException|ReflectionException
+     */
+    private function resolveHandlerParameters(ReflectionMethod|ReflectionFunction $function, array $queryParameters): array
+    {
+        $controllerMethodParameters = $function->getParameters();
+        $validParameters = [];
+
+        $scalarParameterIndex = 0;
+        foreach ($controllerMethodParameters as $methodParameterIndex => $parameter) {
+            $type = $parameter->getType()->getName();
+            $parameterName = $parameter->getName();
+
+            // If parameter is built-in, meaning we have encountered scalar value
+            // controller might be trying to achieve one of two things: pull parameter from container
+            // or value from URL
+            if ($parameter->getType()->isBuiltin()) {
+                // Scalar values (TODO: Might be pulled from container, if no default provided)
+                // or if default provided, ignore container exception ...
+                $scalarValue = $queryParameters[$scalarParameterIndex];
+
+                // Prioritise URL parameter
+                if (!is_null($scalarValue)) {
+                    settype($scalarValue, $type);
+
+                    $validParameters[$methodParameterIndex] = $queryParameters[$scalarParameterIndex]
+                        ? $scalarValue
+                        : $parameter->getDefaultValue();
+                } else {
+                    $validParameters[$methodParameterIndex] = $this->getContainer()->get($parameterName);
+                }
+            } else {
+                // Otherwise, we request the Object from container
+                $fromContainer = $this->getContainer()->get($type);
+
+                $validParameters[$methodParameterIndex] = $fromContainer;
+            }
+        }
+
+        return $validParameters;
     }
 
     public function present(Response $response): void
