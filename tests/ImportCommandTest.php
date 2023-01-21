@@ -5,12 +5,18 @@ use App\Commands\ImportJsonCommand;
 use Composite\Entity\AbstractEntity;
 use PHPUnit\Framework\TestCase;
 
-class ImportCommandValidationTest extends TestCase
+class ImportCommandTest extends TestCase
 {
 
     private function createCommandSubject(): ImportJsonCommand
     {
         return new class extends ImportJsonCommand {
+            public function __construct()
+            {
+                global $app;
+
+                parent::__construct($app);
+            }
         };
     }
 

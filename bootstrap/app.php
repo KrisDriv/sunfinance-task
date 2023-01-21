@@ -4,7 +4,6 @@ declare(strict_types=1);
 use App\Application;
 use Dotenv\Dotenv;
 
-
 define('ROOT', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 define('IS_CONSOLE', php_sapi_name() == 'cli');
 
