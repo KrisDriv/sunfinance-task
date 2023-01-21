@@ -9,3 +9,12 @@ if (!function_exists('database_path')) {
     }
 
 }
+
+if (!function_exists('base_path')) {
+
+    function base_path(string $pathToFile): string
+    {
+        return ROOT . $pathToFile;
+    }
+
+}

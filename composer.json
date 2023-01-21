@@ -19,6 +19,11 @@
     "haydenpierce/class-finder": "^0.4.4",
     "php-di/php-di": "6.4.0",
     "illuminate/http": "^9.47",
-    "doctrine/migrations": "^3.5"
+    "doctrine/migrations": "^3.5",
+    "symfony/string": "^6.2",
+    "nesbot/carbon": "^2.65"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
   }
 }

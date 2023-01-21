@@ -3,16 +3,20 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(
+    name: 'app:serve',
+    description: 'Start built-in php web server for development',
+    aliases: ['serve'],
+    hidden: false
+)]
 class ServeCommand extends Command
 {
-
-    protected static $defaultName = 'serve';
-    protected static $defaultDescription = 'Start built-in php web server for development';
 
     protected function configure()
     {

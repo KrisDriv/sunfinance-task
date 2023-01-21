@@ -10,7 +10,7 @@ use Composite\DB\Traits;
 
 #[Table(connection: 'mysql', name: 'payments')]
 #[Index(columns: ['payment_reference'], isUnique: true, name: 'payment_reference')]
-class Payment extends AbstractEntity
+class PaymentEntity extends AbstractEntity
 {
     use Traits\SoftDelete;
 
