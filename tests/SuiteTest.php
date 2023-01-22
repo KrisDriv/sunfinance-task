@@ -14,4 +14,15 @@ class SuiteTest extends TestCase
         $this->assertFalse(IS_STAGING, 'environment is set to STAGING while tests are running');
     }
 
+    public function testIfEnvironmentTestFileIsRead(): void
+    {
+        $verificationHash = env('APP_TEST_VERIFY_KEY');
+
+        $this->assertEquals(
+            '6f25ca02035a2d523c8676952d107d49',
+            $verificationHash,
+            '.env.testing file was not read properly or APP_TEST_VERIFY_KEY variable is missing'
+        );
+    }
+
 }

@@ -1,22 +1,15 @@
 <?php
-declare(strict_types=1);
 
-namespace App\Commands;
+namespace App\Services;
 
-use App\Application;
-use App\Entities\CustomerEntity;
+use App\Exceptions\EntityException;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use Composite\DB\Attributes\Column;
 use Composite\Entity\AbstractEntity;
 use DateTimeImmutable;
 use DateTimeInterface;
-use DI\DependencyException;
-use DI\NotFoundException;
 use Exception;
 use InvalidArgumentException;
-use JsonException;
-use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionIntersectionType;
@@ -24,79 +17,18 @@ use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionProperty;
 use ReflectionUnionType;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Throwable;
 use function Symfony\Component\String\s;
 
-abstract class ImportJsonCommand extends Command
+/**
+ * This services gives more control entity hydration.
+ *
+ * Was this necessary? No! It was just fun to write.
+ *
+ * @see AbstractEntity::fromArray
+ */
+class EntityHydrateService
 {
-
-    public function __construct(private readonly Application $application)
-    {
-        parent::__construct();
-    }
-
-    public function configure()
-    {
-        $this->addArgument('file', InputArgument::REQUIRED, 'file from which to read JSON data');
-    }
-
-    /**
-     * @throws NotFoundException
-     * @throws ReflectionException
-     * @throws DependencyException
-     * @throws JsonException
-     */
-    public function execute(InputInterface $input, SymfonyStyle|OutputInterface $output): int
-    {
-        if (static::ENTITY_CLASS === null || static::ENTITY_TABLE === null) {
-            $output->error('Sub-class of ' . self::class . ' must define ENTITY_CLASS and ENTITY_TABLE constants');
-
-            return Command::FAILURE;
-        }
-
-        $file = $input->getArgument('file');
-        $table = $this->application->getContainer()->get(static::ENTITY_TABLE);
-
-        foreach ($this->readJsonFile($file) as $row) {
-            $constructorArguments = $this->transformRowDataAccordingToEntityMetadata(
-                $this->translateRowKeys($row, static::KEY_MAPPING ?? []),
-                static::ENTITY_CLASS
-            );
-
-            $entityObject = new CustomerEntity(...array_values($constructorArguments));
-
-            $table->save($entityObject);
-
-            $output->writeln(" * $entityObject->first_name $entityObject->last_name imported");
-        }
-
-        return Command::SUCCESS;
-    }
-
-    /**
-     * Reads and decodes JSON file
-     *
-     * @return array associated
-     * @throws JsonException|InvalidArgumentException
-     */
-    protected function readJsonFile(string $relativeFilePath): array
-    {
-        $absoluteFilePath = base_path($relativeFilePath);
-
-        if (!file_exists($absoluteFilePath)) {
-            throw new InvalidArgumentException("File '$absoluteFilePath' does not exist");
-        }
-
-        return json_decode(
-            file_get_contents($absoluteFilePath),
-            true,
-            flags: JSON_THROW_ON_ERROR
-        );
-    }
 
     /**
      * Changes array keys to those in key translation array. It is not case-sensitive
@@ -106,22 +38,98 @@ abstract class ImportJsonCommand extends Command
      * @param array $keyTranslations
      * @return array
      */
-    protected function translateRowKeys(array $row, array $keyTranslations): array
+    private function translateKeys(array $row, array $keyTranslations): array
     {
+        $snakeCasedKeys = [];
+        foreach (array_keys($row) as $key) {
+            if (!($snakeCasedKey = s($key)->snake()->lower())->equalsTo($key)) {
+                $snakeCasedKeys[strtolower($key)] = $snakeCasedKey->toString();
+            }
+        }
+
+        $keyTranslations = array_merge($snakeCasedKeys, $keyTranslations);
+
         foreach ($row as $key => $data) {
             if (!array_key_exists($lowercaseKey = strtolower($key), $keyTranslations)) {
                 continue;
             }
 
-            $row[$keyTranslations[$lowercaseKey]] = $data;
-            unset($row[$key]);
+            if (($translatedKey = $keyTranslations[$lowercaseKey]) !== $lowercaseKey) {
+                $row[$translatedKey] = $data;
+                unset($row[$key]);
+            }
         }
 
         return $row;
     }
 
     /**
-     * Reads entity class property data and using that information validates/transforms given raw array.
+     * @param array $data
+     * @param string $entityClass
+     * @param array|null $keyTranslations
+     *
+     * @return AbstractEntity
+     *
+     * @throws EntityException
+     */
+    public function fromArray(array $data, string $entityClass, ?array $keyTranslations = null): AbstractEntity
+    {
+        if ($keyTranslations !== null) {
+            $data = $this->translateKeys($data, $keyTranslations);
+        }
+
+        try {
+            $constructorArguments = $this->resolveEntityConstructor($data, $entityClass);
+            $writableProperties = $this->resolveEntityProperties($data, $entityClass);
+        } catch (Throwable $throwable) {
+            throw EntityException::fromThrowable($throwable);
+        }
+
+        $entity = new ($entityClass)(...array_values($constructorArguments));
+
+        foreach ($writableProperties as $propertyKey => $propertyValue) {
+            $entity->{$propertyKey} = $propertyValue;
+        }
+
+        return $entity;
+    }
+
+    /**
+     * @throws ReflectionException
+     * @throws Exception
+     */
+    public function resolveEntityProperties(array $row, string|AbstractEntity $entity): array
+    {
+        if (!is_subclass_of($entity, AbstractEntity::class)) {
+            throw new InvalidArgumentException('Passed $entityClass is not extending ' . AbstractEntity::class . ' class');
+        }
+
+        $reflectiveEntityClass = new ReflectionClass($entity);
+        $validProperties = [];
+
+        foreach ($reflectiveEntityClass->getProperties(ReflectionProperty::IS_PUBLIC) as $reflectionProperty) {
+            if ($reflectionProperty->isPromoted() || $reflectionProperty->isReadOnly()) {
+                continue;
+            }
+
+            $snakeCasedName = s($reflectionProperty->getName())->snake()->lower()->toString();
+
+            if (!isset($row[$snakeCasedName])) {
+                continue;
+            }
+
+            try {
+                $validProperties[$reflectionProperty->getName()] = $this->castProperty($row[$snakeCasedName] ?? null, $reflectionProperty);
+            } catch (Exception $e) {
+                throw new Exception("$snakeCasedName: " . $e->getMessage(), previous: $e);
+            }
+        }
+
+        return $validProperties;
+    }
+
+    /**
+     * Reads entity class constructor signature and attempts to cast given raw data accordingly.
      * Will throw an exception if any data point fails to convert or is missing. Does respect optional/nullable
      * properties.
      *
@@ -131,7 +139,7 @@ abstract class ImportJsonCommand extends Command
      * @throws ReflectionException
      * @throws Exception
      */
-    public function transformRowDataAccordingToEntityMetadata(array $row, string|AbstractEntity $entity): array
+    public function resolveEntityConstructor(array $row, string|AbstractEntity $entity): array
     {
         if (!is_subclass_of($entity, AbstractEntity::class)) {
             throw new InvalidArgumentException('Passed $entityClass is not extending ' . AbstractEntity::class . ' class');
@@ -151,11 +159,6 @@ abstract class ImportJsonCommand extends Command
 
         $validProperties = [];
         foreach ($reflectiveEntityClass->getProperties(ReflectionProperty::IS_PUBLIC) as $reflectionProperty) {
-            // Skip these, we can't write these properties anyway
-            if ($reflectionProperty->isReadOnly()) {
-                continue;
-            }
-
             $snakeCasedName = s($reflectionProperty->getName())->snake()->lower()->toString();
 
             $propertyType = $reflectionProperty->getType();
@@ -183,7 +186,7 @@ abstract class ImportJsonCommand extends Command
             }
 
             try {
-                $validProperties[$reflectionProperty->getName()] = $this->resolveEntityParameter($row[$snakeCasedName] ?? null, $reflectionProperty);
+                $validProperties[$reflectionProperty->getName()] = $this->castProperty($row[$snakeCasedName] ?? null, $reflectionProperty);
             } catch (Exception $e) {
                 throw new Exception("$snakeCasedName: " . $e->getMessage(), previous: $e);
             }
@@ -193,20 +196,18 @@ abstract class ImportJsonCommand extends Command
     }
 
     /**
+     * Attempts to cast given raw value to appropriate data type.
+     *
+     * Intersection type-hinted properties are not supported, and arrays will throw an exception as well
+     *
      * @throws Exception
      */
-    private function resolveEntityParameter($raw, ReflectionProperty|ReflectionParameter $property): mixed
+    private function castProperty($raw, ReflectionProperty|ReflectionParameter $property): mixed
     {
         $resolved = $raw;
         $propertyType = $property->getType();
-        $argumentType = gettype($raw);
 
-        // gettype and ReflectionType::getName() mismatch
-        $argumentType = match ($argumentType) {
-            'boolean' => 'bool',
-            'integer' => 'int',
-            default => $argumentType
-        };
+        $argumentType = get_reflection_aligned_type($raw);
 
         if ($propertyType instanceof ReflectionIntersectionType) {
             throw new Exception('Intersection types are not supported');
@@ -243,14 +244,41 @@ abstract class ImportJsonCommand extends Command
         // Covers both conditions, code above will select appropriate type and continue here.
         // However, we must type check here again in case it wasn't union type and was never typed checked
         if ($propertyType instanceof ReflectionNamedType) {
+            if ($propertyType->allowsNull() && $raw === null) {
+                return null;
+            }
+
             if ($propertyType->isBuiltin()) {
-                $isTypeMismatch = $argumentType !== $propertyType->getName();
+                // Attempts to cast to appropriate data type or returns original to trigger exception
+                $casted = match ($propertyType->getName()) {
+
+                    'float' => is_numeric($raw)
+                        ? (float)$raw
+                        : $raw,
+
+                    'int' => is_numeric($raw)
+                        ? (int)$raw
+                        : $raw,
+
+                    'bool' => filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                        ? (bool)$raw
+                        : $raw,
+
+                    'string' => !is_string($raw)
+                        ?: (string)$raw,
+
+                    'is_array' => throw new Exception('Arrays are not supported')
+                };
+
+                $isTypeMismatch = $argumentType !== $propertyType->getName()
+                    && ($argumentType = get_reflection_aligned_type($casted)) !== $propertyType->getName();
+
                 // The type might not be matching, but NULL can still be possible value
-                if ($isTypeMismatch && ($propertyType->allowsNull() === false || $raw !== null)) {
+                if ($isTypeMismatch) {
                     throw new Exception("Invalid type, expected {$propertyType->getName()}. Got $argumentType instead.");
                 }
 
-                settype($raw, $propertyType->getName());
+                return $casted;
             }
 
             // If type-hinted non-built-in class. We must try and convert given value to that type if possible
@@ -263,20 +291,7 @@ abstract class ImportJsonCommand extends Command
             }
 
             if (enum_exists($propertyType->getName())) {
-                // Some enums may not be possible to resolve, lets see if resolving is actually necessary
-                if ($propertyType->allowsNull()) {
-                    return null;
-                } else {
-                    throw new Exception("Enum {$propertyType->getName()} can not be resolved");
-                }
-            }
-        }
-
-        $attributes = $property->getAttributes(Column::class, ReflectionAttribute::IS_INSTANCEOF);
-
-        if (!empty($attribute)) {
-            foreach ($attributes as $attribute) {
-                // TODO: Implement attribute constraints
+                return constant($propertyType->getName() . '::' . strtoupper($raw));
             }
         }
 

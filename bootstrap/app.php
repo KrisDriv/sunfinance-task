@@ -20,11 +20,17 @@ foreach (glob(ROOT . 'helpers/*.php') as $helperFile) {
 $dotenv = Dotenv::createUnsafeImmutable(ROOT);
 $dotenv->load();
 
-define('ENVIRONMENT', strtolower(env('ENVIRONMENT')));
-define('IS_DEV', in_array(ENVIRONMENT, ['dev', 'development']));
-define('IS_TEST', in_array(ENVIRONMENT, ['test', 'testing']));
-define('IS_PRODUCTION', in_array(ENVIRONMENT, ['prod', 'production']));
-define('IS_STAGING', in_array(ENVIRONMENT, ['stage', 'staging']));
+define('ENVIRONMENT', match (strtolower(env('ENVIRONMENT'))) {
+    'dev', 'development' => 'development',
+    'test', 'testing' => 'testing',
+    'prod', 'production' => 'production',
+    'stage', 'staging' => 'staging'
+});
+
+const IS_DEV = ENVIRONMENT === 'development';
+const IS_TEST = ENVIRONMENT === 'testing';
+const IS_PRODUCTION = ENVIRONMENT === 'production';
+const IS_STAGING = ENVIRONMENT === 'staging';
 
 /**
  * Load .env file specifically for that environment.
