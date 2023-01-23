@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use App\Application;
 use App\Router\Contracts\RouterInterface;
 use App\Router\Router;
 use Carbon\Carbon;
@@ -9,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use function DI\create;
 
@@ -30,5 +32,15 @@ return [
         $logger->pushHandler(new StreamHandler(tmp_path("$date.log")));
 
         return $logger;
+    },
+
+    EventDispatcher::class => function () {
+        return new EventDispatcher();
+    },
+
+    Application::class => function () {
+        global $app;
+
+        return $app;
     }
 ];

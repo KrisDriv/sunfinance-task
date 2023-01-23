@@ -18,6 +18,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use function DI\create;
@@ -33,18 +34,11 @@ class Application implements RequestHandler, ResponsePresenter
 
     private LoggerInterface $logger;
 
-    /**
-     * Namespaces in which classes will be automatically registered inside the container
-     *
-     * @var array
-     */
-    private array $discoverNamespaces = [
-//        'App\\Controllers',
-//        'App\\Services',
-//        'App\\Tables'
-    ];
+    private array $discoverNamespaces = [];
 
     private string $controllerNamespace = 'App\\Controllers';
+
+    private string $listenerNamespace = 'App\\Listeners';
 
     /**
      * @throws Exception
@@ -62,12 +56,20 @@ class Application implements RequestHandler, ResponsePresenter
 
     private function boot()
     {
+        $this->logger->info('boot', [microtime(true), spl_object_id($this)]);
+
         try {
             $this->router->registerRoutesFromControllerAttributes(
                 ClassFinder::getClassesInNamespace($this->controllerNamespace)
             );
         } catch (Exception $e) {
             $this->logger->error('Routes from controller attributes threw an exception', ['exception' => $e]);
+        }
+
+        try {
+            $this->registerListeners();
+        } catch (Exception $e) {
+            $this->logger->error('Failed to register event listeners', ['exception' => $e]);
         }
     }
 
@@ -245,6 +247,39 @@ class Application implements RequestHandler, ResponsePresenter
         }
 
         return $definitions;
+    }
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     * @throws Exception
+     */
+    private function registerListeners(): void
+    {
+        /** @var EventDispatcher $eventDispatcher */
+        $eventDispatcher = $this->getContainer()->get(EventDispatcher::class);
+
+        foreach (ClassFinder::getClassesInNamespace($this->listenerNamespace) as $listenerClass) {
+            $listener = $this->getContainer()->get($listenerClass);
+
+            $handlers = $listener->getHandlers();
+
+            foreach ($handlers as $event => $handler) {
+                $priority = 0;
+                if (is_array($handler)) {
+                    [$handler, $priority] = $handler;
+                }
+
+                $callable = [$listener, $handler];
+
+                if (!is_callable($callable)) {
+                    $this->logger->warning("Listener $listenerClass::$handler for event '$event' was not registered. Method not found.");
+                    continue;
+                }
+
+                $eventDispatcher->addListener($event, [$listener, $handler], $priority);
+            }
+        }
     }
 
 }
