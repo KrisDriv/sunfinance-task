@@ -4,7 +4,12 @@ declare(strict_types=1);
 namespace App\Router;
 
 
+use App\Router\Attributes\Route;
 use App\Router\Contracts\RouterInterface;
+use Exception;
+use HaydenPierce\ClassFinder\ClassFinder;
+use ReflectionClass;
+use ReflectionMethod;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -33,13 +38,14 @@ class Router implements RouterInterface
         return $this->routes;
     }
 
-    public function match(string $methods, string $pattern, callable|string $handler): void
+    public function match(string|array $methods, string $pattern, callable|string $handler): void
     {
+        $methods = is_string($methods) ? explode('|', $methods) : $methods;
         $pattern = $this->baseRoute . '/' . trim($pattern, '/');
         $pattern = $this->baseRoute ? rtrim($pattern, '/') : $pattern;
 
-        foreach (explode('|', $methods) as $method) {
-            $this->routes[$method][] = array(
+        foreach ($methods as $method) {
+            $this->routes[strtolower($method)][] = array(
                 'pattern' => $pattern,
                 'fn' => $handler,
             );
@@ -139,7 +145,7 @@ class Router implements RouterInterface
     public function resolve(Request $request): ?array
     {
         // Define which method we need to handle
-        $requestedMethod = $request->getMethod();
+        $requestedMethod = strtolower($request->getMethod());
         $uri = $request->getPathInfo();
 
         if (!isset($this->routes[$requestedMethod])) {
@@ -166,5 +172,28 @@ class Router implements RouterInterface
         ];
     }
 
+    /**
+     * @throws Exception
+     */
+    public function registerRoutesFromControllerAttributes(array $controllers): void
+    {
+        foreach ($controllers as $class) {
+            $reflection = new ReflectionClass($class);
 
+            if ($reflection->isAbstract()) {
+                continue;
+            }
+
+            foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                $routeAttributes = $method->getAttributes(Route::class);
+
+                foreach ($routeAttributes as $routeAttribute) {
+                    /** @var Route $route */
+                    $route = $routeAttribute->newInstance();
+
+                    $this->match($route->methods, $route->routePath, "$class::{$method->getName()}");
+                }
+            }
+        }
+    }
 }

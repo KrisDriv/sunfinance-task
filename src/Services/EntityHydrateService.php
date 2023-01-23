@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\EntityException;
+use App\Exceptions\Entity\EntityException;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Composite\Entity\AbstractEntity;
@@ -21,7 +21,7 @@ use Throwable;
 use function Symfony\Component\String\s;
 
 /**
- * This services gives more control entity hydration.
+ * This services gives more control of entity hydration.
  *
  * Was this necessary? No! It was just fun to write.
  *
@@ -38,7 +38,7 @@ class EntityHydrateService
      * @param array $keyTranslations
      * @return array
      */
-    private function translateKeys(array $row, array $keyTranslations): array
+    public function translateKeys(array $row, array $keyTranslations): array
     {
         $snakeCasedKeys = [];
         foreach (array_keys($row) as $key) {
@@ -101,7 +101,7 @@ class EntityHydrateService
     public function resolveEntityProperties(array $row, string|AbstractEntity $entity): array
     {
         if (!is_subclass_of($entity, AbstractEntity::class)) {
-            throw new InvalidArgumentException('Passed $entityClass is not extending ' . AbstractEntity::class . ' class');
+            throw new InvalidArgumentException('Passed $entity is not extending ' . AbstractEntity::class . ' class');
         }
 
         $reflectiveEntityClass = new ReflectionClass($entity);
@@ -147,33 +147,16 @@ class EntityHydrateService
 
         $reflectiveEntityClass = new ReflectionClass($entity);
         $constructorMethod = $reflectiveEntityClass->getMethod('__construct');
-        $constructorParameters = [];
-
-        foreach ($constructorMethod->getParameters() as $parameter) {
-            if (!$parameter->isPromoted()) {
-                continue;
-            }
-
-            $constructorParameters[$parameter->getName()] = $parameter;
-        }
 
         $validProperties = [];
-        foreach ($reflectiveEntityClass->getProperties(ReflectionProperty::IS_PUBLIC) as $reflectionProperty) {
-            $snakeCasedName = s($reflectionProperty->getName())->snake()->lower()->toString();
 
-            $propertyType = $reflectionProperty->getType();
+        foreach ($constructorMethod->getParameters() as $reflectionParameter) {
+            $snakeCasedName = s($reflectionParameter->getName())->snake()->lower()->toString();
 
-            // see: https://bugs.php.net/bug.php?id=81386&edit=1
-            // we can not know if promoted parameters have default value by looking at class properties
-            if ($promotedParameter = $constructorParameters[$reflectionProperty->getName()] ?? null) {
-                $parameterType = $promotedParameter->getType();
+            $parameterType = $reflectionParameter->getType();
 
-                $isPropertyOptional = $parameterType !== null
-                    && ($parameterType->allowsNull() || $promotedParameter->isDefaultValueAvailable());
-            } else {
-                $isPropertyOptional = $propertyType !== null
-                    && ($reflectionProperty->getType()->allowsNull() || $reflectionProperty->hasDefaultValue());
-            }
+            $isPropertyOptional = $parameterType !== null
+                && ($parameterType->allowsNull() || $reflectionParameter->isDefaultValueAvailable());
 
             $isPropertyGiven = isset($row[$snakeCasedName]);
 
@@ -186,7 +169,7 @@ class EntityHydrateService
             }
 
             try {
-                $validProperties[$reflectionProperty->getName()] = $this->castProperty($row[$snakeCasedName] ?? null, $reflectionProperty);
+                $validProperties[$reflectionParameter->getName()] = $this->castProperty($row[$snakeCasedName] ?? null, $reflectionParameter);
             } catch (Exception $e) {
                 throw new Exception("$snakeCasedName: " . $e->getMessage(), previous: $e);
             }

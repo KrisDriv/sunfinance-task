@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use App\Exceptions\EntityException;
+use App\Exceptions\Entity\EntityException;
 use App\Services\EntityHydrateService;
 use Composite\Entity\AbstractEntity;
 use DI\DependencyException;

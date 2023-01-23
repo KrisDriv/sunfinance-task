@@ -1,19 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Commands;
+namespace App\Commands\Import;
 
-use App\Commands\Bases\ImportSerializedEntityCommand;
 use App\Entities\CustomerEntity;
 use App\Tables\CustomerTable;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(
     name: 'import:customers',
-    description: 'Imports customers from JSON file',
+    description: 'Imports customers from a file',
     hidden: false
 )]
-class ImportCustomerEntityCommand extends ImportSerializedEntityCommand
+class ImportSerializedCustomerCommand extends ImportSerializedEntityCommand
 {
 
     public const KEY_TRANSLATIONS = [

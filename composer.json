@@ -21,7 +21,9 @@
     "illuminate/http": "^9.47",
     "doctrine/migrations": "^3.5",
     "symfony/string": "^6.2",
-    "nesbot/carbon": "^2.65"
+    "nesbot/carbon": "^2.65",
+    "monolog/monolog": "^3.2",
+    "parsecsv/php-parsecsv": "^1.3"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"

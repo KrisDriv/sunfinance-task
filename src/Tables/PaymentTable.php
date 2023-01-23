@@ -4,32 +4,27 @@ declare(strict_types=1);
 
 namespace App\Tables;
 
-use App\Entities\LoanEntity;
+use App\Entities\PaymentEntity;
 use Composite\DB\TableConfig;
 use Composite\Entity\Exceptions\EntityException;
 
-class LoanTable extends AbstractTable
+class PaymentTable extends AbstractTable
 {
     /**
      * @throws EntityException
      */
     protected function getConfig(): TableConfig
     {
-        return TableConfig::fromEntitySchema(LoanEntity::schema());
+        return TableConfig::fromEntitySchema(PaymentEntity::schema());
     }
 
-    public function findByReference(string $reference): ?LoanEntity
-    {
-        return $this->createEntity($this->findOneInternal(['reference' => $reference]));
-    }
-
-    public function findByPk(string $id): ?LoanEntity
+    public function findByPk(int $id): ?PaymentEntity
     {
         return $this->createEntity($this->findByPkInternal($id));
     }
 
     /**
-     * @return LoanEntity[]
+     * @return PaymentEntity[]
      */
     public function findAll(): array
     {

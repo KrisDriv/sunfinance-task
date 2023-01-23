@@ -1,22 +1,19 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Commands;
+namespace App\Commands\Import;
 
-use App\Commands\Bases\ImportSerializedEntityCommand;
-use App\Entities\CustomerEntity;
 use App\Entities\LoanEntity;
 use App\Services\EntityHydrateService;
-use App\Tables\CustomerTable;
 use App\Tables\LoanTable;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(
     name: 'import:loans',
-    description: 'Imports loans from JSON file',
+    description: 'Imports loans from a file',
     hidden: false
 )]
-class ImportLoanEntityCommand extends ImportSerializedEntityCommand
+class ImportSerializedLoanCommand extends ImportSerializedEntityCommand
 {
 
     /**

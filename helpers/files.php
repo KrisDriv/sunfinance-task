@@ -18,3 +18,12 @@ if (!function_exists('base_path')) {
     }
 
 }
+
+if (!function_exists('tmp_path')) {
+
+    function tmp_path(string $pathToFile): string
+    {
+        return TMP . $pathToFile;
+    }
+
+}

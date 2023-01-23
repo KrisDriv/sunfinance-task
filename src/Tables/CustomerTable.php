@@ -19,6 +19,11 @@ class CustomerTable extends AbstractTable
         return TableConfig::fromEntitySchema(CustomerEntity::schema());
     }
 
+    public function findById(string $customerId): ?CustomerEntity
+    {
+        return $this->createEntity($this->findOneInternal(['id' => $customerId]));
+    }
+
     public function findByPk(): ?CustomerEntity
     {
         return $this->createEntity($this->findOneInternal([]));

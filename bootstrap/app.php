@@ -32,6 +32,8 @@ const IS_TEST = ENVIRONMENT === 'testing';
 const IS_PRODUCTION = ENVIRONMENT === 'production';
 const IS_STAGING = ENVIRONMENT === 'staging';
 
+define("TMP", getenv('TMP_DIR') ?? ROOT . 'tmp' . DIRECTORY_SEPARATOR);
+
 /**
  * Load .env file specifically for that environment.
  *

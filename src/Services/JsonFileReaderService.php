@@ -14,7 +14,7 @@ class JsonFileReaderService
      * @return array associated
      * @throws JsonException|InvalidArgumentException
      */
-    public function readJsonFile(string $relativeFilePath): array
+    public function readFile(string $relativeFilePath): array
     {
         $absoluteFilePath = base_path($relativeFilePath);
 

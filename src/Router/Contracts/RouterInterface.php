@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\Request;
 interface RouterInterface
 {
 
+    public function registerRoutesFromControllerAttributes(array $controllers): void;
+
     /**
      * Return the handler based on incoming request
      */

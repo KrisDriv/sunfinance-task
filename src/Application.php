@@ -13,6 +13,7 @@ use DI\NotFoundException;
 use Doctrine\DBAL\Connection;
 use Exception;
 use HaydenPierce\ClassFinder\ClassFinder;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -25,8 +26,12 @@ class Application implements RequestHandler, ResponsePresenter
 {
 
     private Container $container;
+
     private RouterInterface $router;
+
     private Connection $connection;
+
+    private LoggerInterface $logger;
 
     /**
      * Namespaces in which classes will be automatically registered inside the container
@@ -34,9 +39,12 @@ class Application implements RequestHandler, ResponsePresenter
      * @var array
      */
     private array $discoverNamespaces = [
-        'App\\Controllers',
-        'App\\Services'
+//        'App\\Controllers',
+//        'App\\Services',
+//        'App\\Tables'
     ];
+
+    private string $controllerNamespace = 'App\\Controllers';
 
     /**
      * @throws Exception
@@ -47,6 +55,20 @@ class Application implements RequestHandler, ResponsePresenter
 
         $this->router = $this->container->get(RouterInterface::class);
         $this->connection = $this->container->get(Connection::class);
+        $this->logger = $this->container->get(LoggerInterface::class);
+
+        $this->boot();
+    }
+
+    private function boot()
+    {
+        try {
+            $this->router->registerRoutesFromControllerAttributes(
+                ClassFinder::getClassesInNamespace($this->controllerNamespace)
+            );
+        } catch (Exception $e) {
+            $this->logger->error('Routes from controller attributes threw an exception', ['exception' => $e]);
+        }
     }
 
     public function getConnection(): Connection
@@ -216,7 +238,7 @@ class Application implements RequestHandler, ResponsePresenter
                 foreach ($classes as $class) {
                     $definitions[$class] = create($class);
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 // TODO: Log
                 continue;
             }

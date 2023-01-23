@@ -18,18 +18,21 @@ class PaymentEntity extends AbstractEntity
     public readonly int $id;
 
     public function __construct(
-        public string $payer_name,
-        public string $payer_surname,
-        public DateTimeImmutable $payment_date,
+        public string                     $payer_name,
+        public string                     $payer_surname,
+        public DateTimeImmutable          $payment_date,
         #[Column(precision: 13, scale: 2)]
-        public float $amount,
+        public float                      $amount,
         #[Column(size: 11)]
-        public string $national_security_number,
-        public string $description,
+        public string                     $national_security_number,
+        public string                     $description,
         #[Column(size: 16)]
-        public string $payment_reference,
-        public ?PaymentStatus $status = null,
+        #[PrimaryKey]
+        public string                     $payment_reference,
+        public ?PaymentStatus             $status = null,
         public readonly DateTimeImmutable $created_at = new DateTimeImmutable(),
-        public DateTimeImmutable $updated_at = new DateTimeImmutable(),
-    ) {}
+        public DateTimeImmutable          $updated_at = new DateTimeImmutable(),
+    )
+    {
+    }
 }
