@@ -23,7 +23,8 @@
     "symfony/string": "^6.2",
     "nesbot/carbon": "^2.65",
     "monolog/monolog": "^3.2",
-    "parsecsv/php-parsecsv": "^1.3"
+    "parsecsv/php-parsecsv": "^1.3",
+    "compositephp/doctrine-migrations": "^0.1.1"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"

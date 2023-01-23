@@ -4,9 +4,21 @@
 require 'bootstrap/autoload.php';
 
 $app = require_once 'bootstrap/app.php';
+$dependencyFactory = require_once 'cli-config.php';
 
 use Composite\DB\Commands\GenerateEntityCommand;
 use Composite\DB\Commands\GenerateTableCommand;
+use Doctrine\Migrations\Tools\Console\Command\DiffCommand;
+use Doctrine\Migrations\Tools\Console\Command\DumpSchemaCommand;
+use Doctrine\Migrations\Tools\Console\Command\ExecuteCommand;
+use Doctrine\Migrations\Tools\Console\Command\GenerateCommand;
+use Doctrine\Migrations\Tools\Console\Command\LatestCommand;
+use Doctrine\Migrations\Tools\Console\Command\ListCommand;
+use Doctrine\Migrations\Tools\Console\Command\MigrateCommand;
+use Doctrine\Migrations\Tools\Console\Command\RollupCommand;
+use Doctrine\Migrations\Tools\Console\Command\StatusCommand;
+use Doctrine\Migrations\Tools\Console\Command\SyncMetadataCommand;
+use Doctrine\Migrations\Tools\Console\Command\VersionCommand;
 use HaydenPierce\ClassFinder\ClassFinder;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
@@ -17,6 +29,17 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 $commands = [
     new GenerateEntityCommand(),
     new GenerateTableCommand(),
+    new DumpSchemaCommand($dependencyFactory),
+    new ExecuteCommand($dependencyFactory),
+    new GenerateCommand($dependencyFactory),
+    new LatestCommand($dependencyFactory),
+    new ListCommand($dependencyFactory),
+    new MigrateCommand($dependencyFactory),
+    new DiffCommand($dependencyFactory),
+    new RollupCommand($dependencyFactory),
+    new StatusCommand($dependencyFactory),
+    new SyncMetadataCommand($dependencyFactory),
+    new VersionCommand($dependencyFactory),
 ];
 
 $consoleApplication = new Application();

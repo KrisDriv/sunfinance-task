@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fa63702ba1ebd602237a529b89e3a6fe",
+    "content-hash": "ac21a0e5fe82c873a633d0f21bf79928",
     "packages": [
         {
             "name": "compositephp/db",
@@ -57,6 +57,53 @@
                 "source": "https://github.com/compositephp/db/tree/v0.2.0"
             },
             "time": "2022-11-06T15:53:51+00:00"
+        },
+        {
+            "name": "compositephp/doctrine-migrations",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/compositephp/doctrine-migrations.git",
+                "reference": "a0b3f0de99036be824f2f98f8be90160a3177ceb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/compositephp/doctrine-migrations/zipball/a0b3f0de99036be824f2f98f8be90160a3177ceb",
+                "reference": "a0b3f0de99036be824f2f98f8be90160a3177ceb",
+                "shasum": ""
+            },
+            "require": {
+                "compositephp/db": "^0.2.0",
+                "doctrine/migrations": "^3.0",
+                "laminas/laminas-file": "^2.12",
+                "php": "^8.1",
+                "symfony/finder": "^6.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Composite\\DoctrineMigrations\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Composite PHP",
+                    "email": "compositephp@gmail.com"
+                }
+            ],
+            "description": "Composite DB bridge to Doctrine Migrations",
+            "support": {
+                "issues": "https://github.com/compositephp/doctrine-migrations/issues",
+                "source": "https://github.com/compositephp/doctrine-migrations/tree/v0.1.1"
+            },
+            "time": "2022-12-26T16:58:52+00:00"
         },
         {
             "name": "compositephp/entity",
@@ -1436,6 +1483,133 @@
                 }
             ],
             "time": "2022-12-08T02:08:23+00:00"
+        },
+        {
+            "name": "laminas/laminas-file",
+            "version": "2.12.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laminas/laminas-file.git",
+                "reference": "9e8ff3a6d7ccaad0865581ef672a7c48260b65d9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laminas/laminas-file/zipball/9e8ff3a6d7ccaad0865581ef672a7c48260b65d9",
+                "reference": "9e8ff3a6d7ccaad0865581ef672a7c48260b65d9",
+                "shasum": ""
+            },
+            "require": {
+                "laminas/laminas-stdlib": "^2.7.7 || ^3.15.0",
+                "php": "~8.0.0 || ~8.1.0 || ~8.2.0"
+            },
+            "conflict": {
+                "zendframework/zend-file": "*"
+            },
+            "require-dev": {
+                "laminas/laminas-coding-standard": "~1.0.0",
+                "laminas/laminas-filter": "^2.7.2",
+                "laminas/laminas-i18n": "^2.7.4",
+                "laminas/laminas-progressbar": "^2.5.2",
+                "laminas/laminas-servicemanager": "^2.7.8 || ^3.3",
+                "laminas/laminas-session": "^2.8",
+                "laminas/laminas-validator": "^2.10.1",
+                "phpunit/phpunit": "^9.5.10"
+            },
+            "suggest": {
+                "laminas/laminas-filter": "Laminas\\Filter component",
+                "laminas/laminas-i18n": "Laminas\\I18n component",
+                "laminas/laminas-validator": "Laminas\\Validator component"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Laminas\\File\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "description": "Locate PHP classfiles",
+            "homepage": "https://laminas.dev",
+            "keywords": [
+                "file",
+                "laminas"
+            ],
+            "support": {
+                "chat": "https://laminas.dev/chat",
+                "docs": "https://docs.laminas.dev/laminas-file/",
+                "forum": "https://discourse.laminas.dev",
+                "issues": "https://github.com/laminas/laminas-file/issues",
+                "rss": "https://github.com/laminas/laminas-file/releases.atom",
+                "source": "https://github.com/laminas/laminas-file"
+            },
+            "funding": [
+                {
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
+                }
+            ],
+            "time": "2022-11-21T06:59:25+00:00"
+        },
+        {
+            "name": "laminas/laminas-stdlib",
+            "version": "3.16.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laminas/laminas-stdlib.git",
+                "reference": "f4f773641807c7ccee59b758bfe4ac4ba33ecb17"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laminas/laminas-stdlib/zipball/f4f773641807c7ccee59b758bfe4ac4ba33ecb17",
+                "reference": "f4f773641807c7ccee59b758bfe4ac4ba33ecb17",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~8.0.0 || ~8.1.0 || ~8.2.0"
+            },
+            "conflict": {
+                "zendframework/zend-stdlib": "*"
+            },
+            "require-dev": {
+                "laminas/laminas-coding-standard": "^2.4.0",
+                "phpbench/phpbench": "^1.2.7",
+                "phpunit/phpunit": "^9.5.26",
+                "psalm/plugin-phpunit": "^0.18.0",
+                "vimeo/psalm": "^5.0.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Laminas\\Stdlib\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "description": "SPL extensions, array utilities, error handlers, and more",
+            "homepage": "https://laminas.dev",
+            "keywords": [
+                "laminas",
+                "stdlib"
+            ],
+            "support": {
+                "chat": "https://laminas.dev/chat",
+                "docs": "https://docs.laminas.dev/laminas-stdlib/",
+                "forum": "https://discourse.laminas.dev",
+                "issues": "https://github.com/laminas/laminas-stdlib/issues",
+                "rss": "https://github.com/laminas/laminas-stdlib/releases.atom",
+                "source": "https://github.com/laminas/laminas-stdlib"
+            },
+            "funding": [
+                {
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
+                }
+            ],
+            "time": "2022-12-03T18:48:01+00:00"
         },
         {
             "name": "laravel/serializable-closure",

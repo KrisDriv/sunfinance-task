@@ -56,14 +56,12 @@ class Application implements RequestHandler, ResponsePresenter
 
     private function boot()
     {
-        $this->logger->info('boot', [microtime(true), spl_object_id($this)]);
-
         try {
             $this->router->registerRoutesFromControllerAttributes(
                 ClassFinder::getClassesInNamespace($this->controllerNamespace)
             );
         } catch (Exception $e) {
-            $this->logger->error('Routes from controller attributes threw an exception', ['exception' => $e]);
+            $this->logger->error('Routes from controller attributes failed to register', ['exception' => $e]);
         }
 
         try {

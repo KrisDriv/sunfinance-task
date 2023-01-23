@@ -10,6 +10,7 @@
         "id": "d275ce5e-91c8-49fe-9407-1700b59efe80",
         "firstname": "John",
         "lastname": "Doe",
+        "ssn": "1234509876",
         "phone": "+44123456789"
     },
     {
