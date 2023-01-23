@@ -62,7 +62,7 @@ class ImportSerializedPaymentCommand extends ImportSerializedEntityCommand
         }
 
         if (((int)$row['amount']) < 0) {
-            throw new ImportException($row, 'Negative amount: ' . $row['amount'], 2);
+            throw new ImportException($row, 'Negative amount: ' . $row['amount'], code: 2);
         }
 
         return null;
