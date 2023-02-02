@@ -15,12 +15,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 class ImportSerializedCustomerCommand extends ImportSerializedEntityCommand
 {
 
-    public const KEY_TRANSLATIONS = [
-        'firstname' => 'first_name',
-        'lastname' => 'last_name',
-        'ssn' => 'social_security_number',
-    ];
-
     public const ENTITY_CLASS = CustomerEntity::class;
     public const ENTITY_TABLE = CustomerTable::class;
 

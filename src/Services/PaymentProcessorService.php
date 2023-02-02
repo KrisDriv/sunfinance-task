@@ -6,11 +6,12 @@ namespace App\Services;
 use App\Entities\Enums\LoanState;
 use App\Entities\Enums\PaymentStatus;
 use App\Entities\PaymentEntity;
-use App\Events\FailedPaymentEvent;
-use App\Events\LoanPaidEvent;
-use App\Events\PaymentReceivedEvent;
+use App\Events\Loan\LoanPaidEvent;
+use App\Events\Payment\PaymentFailedEvent;
+use App\Events\Payment\PaymentReceivedEvent;
 use App\Exceptions\Payment\InvalidPaymentTargetException;
 use App\Exceptions\Refund\InvalidRefundTargetException;
+use App\Tables\CustomerTable;
 use App\Tables\LoanTable;
 use App\Tables\PaymentTable;
 use Psr\Log\LoggerInterface;
@@ -25,12 +26,17 @@ class PaymentProcessorService
         private readonly PaymentTable    $paymentTable,
         private readonly RefundService   $refundService,
         private readonly LoggerInterface $logger,
-        private readonly EventDispatcher $eventDispatcher
+        private readonly EventDispatcher $eventDispatcher,
+        private readonly CustomerTable   $customerTable
     )
     {
     }
 
     /**
+     * Process incoming payment and queue payment order for a refund, if amount paid exceeds the expected amount
+     *
+     * Fires appropriate events: LoanPaidEvent, PaymentReceivedEvent, PaymentFailedEvent, RefundQueuedEvent
+     *
      * @throws InvalidPaymentTargetException
      * @throws InvalidRefundTargetException
      */
@@ -41,6 +47,8 @@ class PaymentProcessorService
         if (!$loanEntity) {
             throw new InvalidPaymentTargetException($paymentEntity, 'Could not find a target loan');
         }
+
+        $customerEntity = $this->customerTable->findById($loanEntity->customer_id);
 
         $amountAfterPayment = $loanEntity->amount_to_pay - $paymentEntity->amount;
 
@@ -59,7 +67,7 @@ class PaymentProcessorService
                         'loanEntity' => $loanEntity
                     ]);
 
-                    $this->eventDispatcher->dispatch(new FailedPaymentEvent($paymentEntity), FailedPaymentEvent::NAME);
+                    $this->eventDispatcher->dispatch(new PaymentFailedEvent($paymentEntity), PaymentFailedEvent::NAME);
 
                     return null;
                 }
@@ -79,7 +87,7 @@ class PaymentProcessorService
 
             if ($loanEntity->state === LoanState::PAID) {
                 $this->eventDispatcher->dispatch(
-                    new LoanPaidEvent($paymentEntity, $loanEntity, $paymentOrder ?? null),
+                    new LoanPaidEvent($paymentEntity, $loanEntity, $customerEntity, $paymentOrder ?? null),
                     LoanPaidEvent::NAME
                 );
             }
@@ -94,7 +102,7 @@ class PaymentProcessorService
                 'exception' => $e
             ]);
 
-            $this->eventDispatcher->dispatch(new FailedPaymentEvent($paymentEntity));
+            $this->eventDispatcher->dispatch(new PaymentFailedEvent($paymentEntity), PaymentFailedEvent::NAME);
         }
 
         return null;

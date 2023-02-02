@@ -2,21 +2,21 @@
 
 namespace App\Listeners;
 
-use App\Events\FailedPaymentEvent;
-use App\Events\LoanPaidEvent;
-use App\Events\PaymentReceivedEvent;
+use App\Events\Loan\LoanPaidEvent;
+use App\Events\Payment\PaymentFailedEvent;
+use App\Events\Payment\PaymentReceivedEvent;
 use App\Listeners\Concrete\Listener;
 
 class PaymentsListener extends Listener
 {
 
     protected array $handlers = [
-        FailedPaymentEvent::NAME => 'failedPaymentHandler',
+        PaymentFailedEvent::NAME => 'failedPaymentHandler',
         LoanPaidEvent::NAME => 'loanPaidHandler',
         PaymentReceivedEvent::NAME => 'receivedPaymentHandler'
     ];
 
-    public function failedPaymentHandler(FailedPaymentEvent $event): void
+    public function failedPaymentHandler(PaymentFailedEvent $event): void
     {
         // TODO: Do whatever, send notifications etc.
     }

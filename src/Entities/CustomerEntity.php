@@ -4,7 +4,6 @@ namespace App\Entities;
 
 use Composite\DB\Attributes\{Column, PrimaryKey, Table};
 use Composite\DB\Traits;
-use Composite\Entity\AbstractEntity;
 use DateTimeImmutable;
 
 #[Table(connection: 'mysql', name: 'customers')]

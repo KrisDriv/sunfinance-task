@@ -7,16 +7,19 @@ use App\Entities\Enums\PaymentOrderStatus;
 use App\Entities\LoanEntity;
 use App\Entities\PaymentEntity;
 use App\Entities\PaymentOrder;
+use App\Events\Refund\RefundQueuedEvent;
 use App\Exceptions\Refund\InvalidRefundTargetException;
 use App\Tables\CustomerTable;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class RefundService
 {
 
     public function __construct(private readonly CustomerTable       $customerTable,
                                 private readonly LoggerInterface     $logger,
-                                private readonly PaymentOrderService $paymentOrderService)
+                                private readonly PaymentOrderService $paymentOrderService,
+                                private readonly EventDispatcher     $eventDispatcher)
     {
     }
 
@@ -28,7 +31,11 @@ class RefundService
         $customer = $this->customerTable->findById($loanEntity->customer_id);
 
         if ($customer === null) {
-            throw new InvalidRefundTargetException($paymentEntity, 'Unable to find customer for a refund');
+
+
+            throw new InvalidRefundTargetException($paymentEntity,
+                "Unable to find customer by id '$loanEntity->customer_id' for a refund"
+            );
         }
 
         $paymentOrder = new PaymentOrder(
@@ -41,6 +48,8 @@ class RefundService
             $this->logger->info('Refund payment order queued', [
                 'paymentOrder' => $paymentOrder
             ]);
+
+            $this->eventDispatcher->dispatch(new RefundQueuedEvent($paymentOrder), RefundQueuedEvent::NAME);
 
             return $paymentOrder;
         }

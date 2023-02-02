@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Events;
+namespace App\Events\Payment;
 
 use App\Entities\PaymentEntity;
 use Symfony\Contracts\EventDispatcher\Event;

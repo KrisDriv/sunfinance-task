@@ -16,14 +16,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 class ImportSerializedLoanCommand extends ImportSerializedEntityCommand
 {
 
-    /**
-     * This is empty as most keys align with those found in database table. Few that do not
-     * are converted to snake case automagically
-     *
-     * @see EntityHydrateService::translateKeys
-     */
-    public const KEY_TRANSLATIONS = [];
-
     public const ENTITY_CLASS = LoanEntity::class;
     public const ENTITY_TABLE = LoanTable::class;
 

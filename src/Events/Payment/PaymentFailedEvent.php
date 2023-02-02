@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Payment;
 
 use App\Entities\PaymentEntity;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class FailedPaymentEvent extends Event
+class PaymentFailedEvent extends Event
 {
 
     public const NAME = 'payment.failed';

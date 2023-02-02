@@ -4,12 +4,13 @@ declare(strict_types=1);
 namespace App\Commands\Import;
 
 use App\Application;
+use App\Commands\Traits\HydrateHooks;
+use App\Config\EntityImportConfig;
 use App\Exceptions\Import\ImportException;
 use App\Services\CsvFileReaderService;
 use App\Services\EntityHydrateService;
 use App\Services\JsonFileReaderService;
 use App\Tables\AbstractTable;
-use Composite\Entity\AbstractEntity;
 use Composite\Entity\Exceptions\EntityException;
 use Exception;
 use Symfony\Component\Console\Command\Command;
@@ -22,49 +23,15 @@ use Throwable;
 
 abstract class ImportSerializedEntityCommand extends Command
 {
+    use HydrateHooks;
 
     public function __construct(protected readonly Application         $application,
                                 private readonly JsonFileReaderService $jsonFileReaderService,
                                 private readonly CsvFileReaderService  $csvFileReaderService,
-                                private readonly EntityHydrateService  $entityHydrateService)
+                                private readonly EntityHydrateService  $entityHydrateService,
+                                private readonly EntityImportConfig    $importConfig)
     {
         parent::__construct();
-    }
-
-    /**
-     * Before entity is saved
-     *
-     * To exit program prematurely return exit code
-     *
-     * @return null|int exit code
-     */
-    protected function preSave(AbstractEntity $entity, OutputInterface $output): ?int
-    {
-        return null;
-    }
-
-    /**
-     * Before row is hydrated. Passed array has translated keys
-     *
-     * To exit program prematurely return exit code
-     *
-     * @return null|int exit code
-     */
-    protected function preHydrate(array &$row, OutputInterface $output): ?int
-    {
-        return null;
-    }
-
-    /**
-     * When entity already exists in database.
-     *
-     * To exit program prematurely return exit code
-     *
-     * @return null|int exit code
-     */
-    protected function onDuplicate(AbstractEntity $entity, OutputInterface $output): ?int
-    {
-        return null;
     }
 
     /**
@@ -135,7 +102,10 @@ abstract class ImportSerializedEntityCommand extends Command
 
                 // Attempting to hydrate
                 try {
-                    $row = $this->entityHydrateService->translateKeys($row, static::KEY_TRANSLATIONS ?? null);
+                    $row = $this->entityHydrateService->translateKeys(
+                        $row,
+                        $this->importConfig->getKeyTranslationArrayFor(static::ENTITY_CLASS)
+                    );
 
                     if (!is_null($exitCode = $this->preHydrate($row, $output)) && $force) {
                         return $exitCode;
@@ -166,19 +136,13 @@ abstract class ImportSerializedEntityCommand extends Command
                             return $exitCode;
                         }
 
-                        /**
-                         * TODO: We could also check if primary key is now populated to save query count
-                         *
-                         * Check if preSave call saved the entity. Meaning it was processed by some other service
-                         */
-                        if ($table->exists($entity)) {
+                        if ($entity->isSaved()) {
                             $output->writeln("<fg=green>$listItemPrefix: Processed</fg=green>");
                         } else {
                             $table->save($entity);
 
                             $output->writeln("<fg=green>$listItemPrefix: Imported</fg=green>");
                         }
-
 
                         $imported++;
                     }

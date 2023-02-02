@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Events;
+namespace App\Events\Loan;
 
+use App\Entities\CustomerEntity;
 use App\Entities\LoanEntity;
 use App\Entities\PaymentEntity;
 use App\Entities\PaymentOrder;
@@ -11,13 +12,19 @@ use Symfony\Contracts\EventDispatcher\Event;
 class LoanPaidEvent extends Event
 {
 
-    public const NAME = 'payment.loan.paid';
+    public const NAME = 'loan.paid';
 
-    public function __construct(protected PaymentEntity $payment,
-                                protected LoanEntity    $loan,
-                                protected ?PaymentOrder $refund,
+    public function __construct(protected PaymentEntity   $payment,
+                                protected LoanEntity      $loan,
+                                protected ?CustomerEntity $customer,
+                                protected ?PaymentOrder   $refund,
     )
     {
+    }
+
+    public function getCustomer(): ?CustomerEntity
+    {
+        return $this->customer;
     }
 
     public function getRefund(): ?PaymentOrder

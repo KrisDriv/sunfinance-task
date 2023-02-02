@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use App\Exceptions\Entity\EntityException;
 use App\Services\EntityHydrateService;
-use Composite\Entity\AbstractEntity;
+use App\Entities\AbstractEntity;
 use DI\DependencyException;
 use DI\NotFoundException;
 use PHPUnit\Framework\TestCase;

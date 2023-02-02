@@ -4,7 +4,6 @@ namespace App\Entities;
 
 use DateTimeImmutable;
 use Composite\DB\Attributes\{Table, PrimaryKey, Column, Index};
-use Composite\Entity\AbstractEntity;
 use App\Entities\Enums\PaymentStatus;
 use Composite\DB\Traits;
 

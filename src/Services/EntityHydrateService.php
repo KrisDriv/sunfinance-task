@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Exceptions\Entity\EntityException;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use Composite\Entity\AbstractEntity;
+use App\Entities\AbstractEntity;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
