@@ -23,7 +23,7 @@ class PaymentEntity extends AbstractEntity
         #[Column(precision: 13, scale: 2)]
         public float                      $amount,
         #[Column(size: 11)]
-        public string                     $national_security_number,
+        public ?string                     $national_security_number,
         public string                     $description,
         #[Column(size: 16)]
         #[PrimaryKey]

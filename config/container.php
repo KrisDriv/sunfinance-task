@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 use App\Application;
+use App\Contracts\Error\ExceptionHandler;
+use App\ErrorHandler;
 use App\Router\Contracts\RouterInterface;
 use App\Router\Router;
 use Carbon\Carbon;
@@ -42,5 +44,19 @@ return [
         global $app;
 
         return $app;
-    }
+    },
+
+    \App\Contracts\Error\ErrorHandler::class => $errorHandlerCallback = function() {
+        static $handler;
+
+        if($handler) {
+            return $handler;
+        }
+
+        $handler = new ErrorHandler();
+
+        return $handler;
+    },
+
+    ExceptionHandler::class => $errorHandlerCallback
 ];

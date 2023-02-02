@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 namespace App;
 
-use App\Http\Contracts\RequestHandler;
-use App\Http\Contracts\ResponsePresenter;
+use App\Contracts\Error\ExceptionHandler;
+use App\Contracts\Http\RequestHandler;
+use App\Contracts\Http\ResponsePresenter;
 use App\Router\Contracts\RouterInterface;
 use DI\Container;
 use DI\ContainerBuilder;
@@ -34,6 +35,8 @@ class Application implements RequestHandler, ResponsePresenter
 
     private LoggerInterface $logger;
 
+    private ExceptionHandler&\App\Contracts\Error\ErrorHandler $exceptionHandler;
+
     private array $discoverNamespaces = [];
 
     private string $controllerNamespace = 'App\\Controllers';
@@ -58,7 +61,7 @@ class Application implements RequestHandler, ResponsePresenter
     {
         try {
             $this->router->registerRoutesFromControllerAttributes(
-                ClassFinder::getClassesInNamespace($this->controllerNamespace)
+                ClassFinder::getClassesInNamespace($this->controllerNamespace, ClassFinder::RECURSIVE_MODE)
             );
         } catch (Exception $e) {
             $this->logger->error('Routes from controller attributes failed to register', ['exception' => $e]);
@@ -68,6 +71,14 @@ class Application implements RequestHandler, ResponsePresenter
             $this->registerListeners();
         } catch (Exception $e) {
             $this->logger->error('Failed to register event listeners', ['exception' => $e]);
+        }
+
+        if (IS_DEV) {
+            try {
+                $this->exceptionHandler = $this->container->get(ExceptionHandler::class);
+            } catch (DependencyException|NotFoundException $e) {
+                $this->logger->error('Exception thrown when attaching Exception&Error Handler', ['exception' => $e]);
+            }
         }
     }
 
@@ -147,7 +158,16 @@ class Application implements RequestHandler, ResponsePresenter
             list($controllerShortName, $method) = explode('@', $handler);
 
             $fullyQualifiedControllerClass = $this->router->getNamespace() . '\\' . $controllerShortName;
-            $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
+
+            try {
+                $controller = $this->getContainer()->get($fullyQualifiedControllerClass);
+            } catch (NotFoundException $e) {
+                if (IS_DEV) {
+                    return $this->normalizeHandlerResponse($e->getMessage(), 404, 'Controller not found');
+                } else {
+                    return $this->normalizeHandlerResponse('Page not found.', 404);
+                }
+            }
 
             $reflectionClass = new ReflectionClass($fullyQualifiedControllerClass);
 
@@ -215,7 +235,7 @@ class Application implements RequestHandler, ResponsePresenter
         $response->send();
     }
 
-    private function normalizeHandlerResponse(mixed $raw): Response
+    private function normalizeHandlerResponse(mixed $raw, ?int $status = null, ?string $message = null): Response
     {
         if ($raw instanceof Response) {
             return $raw;
@@ -232,7 +252,7 @@ class Application implements RequestHandler, ResponsePresenter
         $definitions = [];
         foreach ($namespaces as $namespace) {
             try {
-                $classes = ClassFinder::getClassesInNamespace($namespace);
+                $classes = ClassFinder::getClassesInNamespace($namespace, ClassFinder::RECURSIVE_MODE);
 
                 // Register classes in the container
                 foreach ($classes as $class) {

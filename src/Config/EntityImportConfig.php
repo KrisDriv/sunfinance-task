@@ -10,7 +10,10 @@ class EntityImportConfig
 {
 
     public const TRANSLATIONS = [
-        PaymentEntity::class => [],
+        PaymentEntity::class => [
+            'firstname' => 'payer_name',
+            'lastname' => 'payer_surname'
+        ],
 
         LoanEntity::class => [],
 

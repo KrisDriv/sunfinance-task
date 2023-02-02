@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use App\Http\Contracts\RequestHandler;
-use App\Http\Contracts\ResponsePresenter;
+use App\Contracts\Http\RequestHandler;
+use App\Contracts\Http\ResponsePresenter;
 use Symfony\Component\HttpFoundation\Request;
 
 // Change directory to ROOT
