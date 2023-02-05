@@ -5,7 +5,7 @@ namespace App\Commands\Traits;
 use Composite\Entity\AbstractEntity;
 use Symfony\Component\Console\Output\OutputInterface;
 
-trait HydrateHooks
+trait EntityImportHooks
 {
 
     /**
@@ -21,7 +21,7 @@ trait HydrateHooks
     }
 
     /**
-     * Before row is hydrated. Passed array has translated keys
+     * Before row is hydrated. Note: Passed array has translated keys
      *
      * To exit program prematurely return exit code
      *

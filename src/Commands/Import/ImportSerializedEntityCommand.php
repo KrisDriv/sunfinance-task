@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Commands\Import;
 
 use App\Application;
-use App\Commands\Traits\HydrateHooks;
+use App\Commands\Traits\EntityImportHooks;
 use App\Config\EntityImportConfig;
 use App\Exceptions\Import\ImportException;
 use App\Services\CsvFileReaderService;
@@ -23,7 +23,7 @@ use Throwable;
 
 abstract class ImportSerializedEntityCommand extends Command
 {
-    use HydrateHooks;
+    use EntityImportHooks;
 
     public function __construct(protected readonly Application         $application,
                                 private readonly JsonFileReaderService $jsonFileReaderService,

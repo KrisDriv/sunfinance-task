@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Exceptions\Import;
 
+use App\Exceptions\Exception;
 use Composite\Entity\AbstractEntity;
-use Exception;
 use Throwable;
 
 /**

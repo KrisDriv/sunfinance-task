@@ -7,6 +7,7 @@ use App\Entities\PaymentEntity;
 use App\Exceptions\Import\ImportException;
 use App\Exceptions\Payment\InvalidPaymentTargetException;
 use App\Exceptions\Refund\InvalidRefundTargetException;
+use App\Services\PaymentImportService;
 use App\Services\PaymentProcessorService;
 use App\Tables\PaymentTable;
 use Composite\Entity\AbstractEntity;
@@ -29,6 +30,7 @@ class ImportSerializedPaymentCommand extends ImportSerializedEntityCommand
     public const ENTITY_TABLE = PaymentTable::class;
 
     private PaymentProcessorService $paymentProcessor;
+    private PaymentImportService $paymentImportService;
 
     /**
      * @throws DependencyException
@@ -37,6 +39,7 @@ class ImportSerializedPaymentCommand extends ImportSerializedEntityCommand
     public function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->paymentProcessor = $this->application->getContainer()->get(PaymentProcessorService::class);
+        $this->paymentImportService = $this->application->getContainer()->get(PaymentImportService::class);
     }
 
     /**
@@ -52,13 +55,8 @@ class ImportSerializedPaymentCommand extends ImportSerializedEntityCommand
      */
     public function preHydrate(array &$row, OutputInterface $output): ?int
     {
-        if (strtotime($row['payment_date']) === false) {
-            throw new ImportException($row, 'Invalid date: ' . $row['payment_date'], code: 3);
-        }
-
-        if (((int)$row['amount']) < 0) {
-            throw new ImportException($row, 'Negative amount: ' . $row['amount'], code: 2);
-        }
+        $this->paymentImportService->validate($row);
+        $this->paymentImportService->transform($row);
 
         return null;
     }

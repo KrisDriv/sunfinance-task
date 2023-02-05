@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Exceptions\Payment;
 
 use App\Entities\PaymentEntity;
-use Exception;
+use App\Exceptions\Exception;
 use Throwable;
 
 class PaymentException extends Exception
