@@ -12,6 +12,8 @@ use Doctrine\DBAL\Connection;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Monolog\Handler\ConsoleHandler;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use function DI\create;
@@ -32,6 +34,7 @@ return [
 
         $logger = new Logger('app');
         $logger->pushHandler(new StreamHandler(tmp_path("$date.log")));
+        $logger->pushHandler(new ConsoleHandler());
 
         return $logger;
     },
@@ -46,10 +49,10 @@ return [
         return $app;
     },
 
-    \App\Contracts\Error\ErrorHandler::class => $errorHandlerCallback = function() {
+    \App\Contracts\Error\ErrorHandler::class => $errorHandlerCallback = function () {
         static $handler;
 
-        if($handler) {
+        if ($handler) {
             return $handler;
         }
 

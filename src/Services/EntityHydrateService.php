@@ -2,13 +2,20 @@
 
 namespace App\Services;
 
+use App\Config\EntityImportConfig;
 use App\Exceptions\Entity\EntityException;
+use App\Exceptions\Import\ImportException;
+use App\Import\Contracts\ImportLayer;
+use App\Import\Enums\ImportEvent;
+use App\Import\ImportConfiguration;
+use App\Tables\AbstractTable;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use App\Entities\AbstractEntity;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
+use Generator;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionException;
@@ -17,6 +24,7 @@ use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionProperty;
 use ReflectionUnionType;
+use Symfony\Component\Console\Command\Command;
 use Throwable;
 use function Symfony\Component\String\s;
 
@@ -61,6 +69,67 @@ class EntityHydrateService
         }
 
         return $row;
+    }
+
+    /**
+     * @param ImportConfiguration $importConfiguration
+     *
+     * @return Generator
+     * @throws Throwable
+     *
+     * @throws EntityException
+     */
+    public function import(ImportConfiguration $importConfiguration): Generator
+    {
+        foreach ($importConfiguration->rows as $row) {
+            $row = $this->translateKeys(
+                $row,
+                $importConfiguration->translationKeys
+            );
+
+            yield ImportEvent::PRE_HYDRATE =>
+            $this->passThrough($row, $importConfiguration->layers, ImportEvent::PRE_HYDRATE, $importConfiguration);
+
+            $entity = $this->fromArray($row, $importConfiguration->entityClass, $importConfiguration->translationKeys);
+
+            yield ImportEvent::PRE_SAVE =>
+            $this->passThrough($entity, $importConfiguration->layers, ImportEvent::PRE_SAVE, $importConfiguration);
+
+            $importConfiguration->table->save($entity);
+
+            yield $entity;
+        }
+    }
+
+    /**
+     * Triggers hooks on layers. Will stop execution if any hook returns any value other than null
+     *
+     * @param AbstractEntity|array $entity
+     * @param ImportLayer|array $importLayers
+     * @param ImportEvent $event
+     * @param ImportConfiguration $configuration
+     * @return int|null
+     */
+    public function passThrough(AbstractEntity|array &$entity,
+                                ImportLayer|array    $importLayers,
+                                ImportEvent          $event,
+                                ImportConfiguration  $configuration): ?int
+    {
+        $importLayers = is_array($importLayers) ? $importLayers : [$importLayers];
+
+        foreach ($importLayers as $layer) {
+            $return = match ($event) {
+                ImportEvent::PRE_SAVE => $layer->preSave($entity, $configuration->table),
+                ImportEvent::PRE_HYDRATE => $layer->preHydrate($entity, $configuration->table),
+                ImportEvent::ON_DUPLICATE => $layer->onDuplicate($entity, $configuration->table)
+            };
+
+            if ($return !== null) {
+                return $return;
+            }
+        }
+
+        return $return ?? null;
     }
 
     /**
@@ -280,5 +349,27 @@ class EntityHydrateService
 
         return $resolved;
     }
+
+    private function displayableColumns(array $row): ?array
+    {
+        $eligibleRows = array_filter(
+            $row,
+            function (mixed $column): bool {
+                return is_string($column) && strlen($column) < 31;
+            }
+        );
+
+        return array_chunk($eligibleRows, 3)[0] ?? null;
+    }
+
+    private function identifier(array $row): string
+    {
+        if (is_null($columns = $this->displayableColumns($row))) {
+            return 'UNKNOWN';
+        }
+
+        return implode(' ', $columns);
+    }
+
 
 }

@@ -97,6 +97,11 @@ class Application implements RequestHandler, ResponsePresenter
         return $this->router;
     }
 
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
+    }
+
     /**
      * @throws Exception
      */
